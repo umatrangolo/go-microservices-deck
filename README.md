@@ -1,2 +1,2 @@
 # go-microservices-deck
-Slide deck for the "Writing microservices in Go" presentation
+Slide deck for the "[Writing microservices in Go](https://umatrangolo.github.io/go-microservices-deck)" presentation
