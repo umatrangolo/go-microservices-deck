@@ -495,8 +495,10 @@ var _ = Describe("UserStore", func() {
 
         Context("when trying to load an user by its guid", func() {
                 It("should find and load an user from its guid iff is on the db", func() {
-                        Expect(userStore.LoadUserIdByGuid("96f9efe0-30c2-012c-8f71-0015177442e6")).Should(Equal(2))
-                        Expect(userStore.LoadUserIdByGuid("9472ae70-30c2-012c-8f71-0015177442e6")).Should(Equal(3))
+                    Expect(userStore.LoadUserIdByGuid("96f9efe0-30c2-012c-8f71-0015177442e6"))
+                        .Should(Equal(2))
+                    Expect(userStore.LoadUserIdByGuid("9472ae70-30c2-012c-8f71-0015177442e6"))
+                        .Should(Equal(3))
                 })
                 It("should return an error if no user is present with the given guid", func() {
                         _, err := userStore.LoadUserIdByGuid("367aee50-2fb4-012c-4444-001517734d92")
