@@ -120,6 +120,21 @@
         width: 90%;
       }
 
+      .mountebank-img img {
+        height: 30%;
+        width: 30%;
+      }
+
+      .imposter-img img {
+        height: 50%;
+        width: 50%;
+      }
+
+      .big-img img {
+        height: 110%;
+        width: 110%;
+      }
+
       .json {
         font-size: 11px;
       }
@@ -181,7 +196,7 @@ layout: false
 ]
 .right-column[
 Simple tool for simple problems:
-- SELECT/marshal/HTTP serve kind of services
+- SELECT/marshal/HTTP kind of services
 
 - CPU intensive tasks
 
@@ -190,7 +205,7 @@ Simple tool for simple problems:
 ---
 template: inverse
 
-## How does it work, then?
+## How does it work?
 ---
 name: how
 .left-column[
@@ -199,7 +214,7 @@ name: how
 ]
 .right-column[
 
-- First import a db driver
+First import a db driver
 
 ```go
 import (
@@ -208,7 +223,7 @@ import (
 )
 ```
 
-- Then open a db
+Then open a db
 
 ```go
 db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/hello")
@@ -218,7 +233,7 @@ if err != nil {
 defer db.Close()
 ```
 
-- Query and parse the rows
+Query and parse the rows
 
 ```go
 age := 27
@@ -248,7 +263,7 @@ name: how
 ]
 .right-column[
 
-- Import needed package
+Import needed package
 
 ```go
 import (
@@ -256,7 +271,7 @@ import (
 )
 ```
 
-- JSON annotate your structs
+JSON annotate your structs
 
 ```go
 type Movie struct {
@@ -267,7 +282,7 @@ type Movie struct {
 }
 ```
 
-- Create some Movies
+Create some Movies
 
 ```go
 var movies = []Movie{
@@ -280,7 +295,7 @@ var movies = []Movie{
 }
 ```
 
-- Marshal in JSON
+Marshal in JSON
 
 ```go
 data, err := json.Marshal(movies)
@@ -289,7 +304,6 @@ if err != nil {
 }
 fmt.Printf("%s\n", data)
 ```
-
 ]
 ---
 name: how
@@ -301,7 +315,7 @@ name: how
 ]
 .right-column[
 
-- Needed imports
+Needed imports
 
 ```go
 import (
@@ -312,7 +326,7 @@ import (
 
 ```
 
-- Define an handler fn
+Define an handler fn
 
 ```go
 // handler echoes the Path component of the request URL r.
@@ -321,7 +335,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-- Serve your handler
+Serve your handler
 
 ```go
 func main() {
@@ -329,6 +343,276 @@ func main() {
     log.Fatal(http.ListenAndServe("localhost:8000", nil))
 }
 ```
+]
+---
+template: inverse
+## How do you test?
+---
+name: testing
+.left-column[
+## How do you test?
+### - Ginkgo
+]
+.right-column[
+.center[![Center-aligned image](images/ginkgo.png)]
+
+Ginkgo provides a fluent DSL to write BDD style unit tests
+]
+---
+name: testing
+.left-column[
+## How do you test?
+### - Ginkgo
+### - Mountebank
+]
+.right-column[
+.center[![Center-aligned image](images/ginkgo.png)]
+
+Ginkgo provides a fluent DSL to write BDD style unit tests
+
+.mountebank-img.center[![Center-aligned image](images/mountebank.png)]
+
+Mountebank enables easy test doubles over the wire enabling
+end-to-end functional testing
+]
+---
+name: ginkgo
+.left-column[
+## Unit testing with Ginkgo
+### - Quick start
+]
+.right-column[
+Bootstrapping a test suite
+```go
+ginkgo bootstrap
+```
+
+This will create all the needed scaffolding
+
+```go
+package service_test
+
+import (
+        . "github.com/onsi/ginkgo"
+        . "github.com/onsi/gomega"
+
+        "testing"
+)
+
+func TestService(t *testing.T) {
+        RegisterFailHandler(Fail)
+        RunSpecs(t, "Service Suite")
+}
+```
+
+Go enforces 'black box` testing
+
+Unit tests *are not* in the same package of tested code
+
+Orthogonal test code resulting in less brittle test suites
+]
+---
+name: ginkgo
+.left-column[
+## Unit testing with Ginkgo
+### - Quick start
+### - Nice tooling
+]
+.right-column[
+Automatic generation of test skeleton
+
+```shell
+$ ginkgo generate binders
+
+├── service
+│   ├── binders.go
+│   ├── binders_test.go
+│   ├── export_test.go
+│   ├── service.go
+│   ├── service_integration_test.go
+│   └── service_suite_test.go
+
+```
+
+A test skeleton gets generated in the same folder *but* in a
+different package
+
+Running a test suite
+
+```shell
+ginkgo
+Running Suite: Service Suite
+============================
+Random Seed: 1490796972
+Will run 10 of 10 specs
+
+••••••••••
+Ran 10 of 10 Specs in 0.001 seconds
+SUCCESS! -- 10 Passed | 0 Failed | 0 Pending | 0 Skipped PASS
+
+Ginkgo ran 1 suite in 978.257274ms
+Test Suite Passed
+
+```
+]
+---
+name: ginkgo
+.left-column[
+## Unit testing with Ginkgo
+### - Quick start
+### - Nice tooling
+### - Fluent DSL
+]
+.right-column[
+
+Setup / Teardown
+
+```go
+BeforeEach(func() {
+ ...
+})
+
+AfterEach(func() {
+ ...
+})
+```
+
+Descriptive BDD style
+
+```go
+var _ = Describe("UserStore", func() {
+        var testDb *sql.DB
+        var userStore UserStore
+
+        BeforeEach(func() {
+                testDb = mkTestDb("user_store_test.dml.sql")
+                userStore = NewUserStore(testDb)
+        })
+
+        AfterEach(func() {
+                testDb.Close()
+        })
+
+        Context("when trying to load an user by its guid", func() {
+                It("should find and load an user from its guid iff is on the db", func() {
+                        Expect(userStore.LoadUserIdByGuid("96f9efe0-30c2-012c-8f71-0015177442e6")).Should(Equal(2))
+                        Expect(userStore.LoadUserIdByGuid("9472ae70-30c2-012c-8f71-0015177442e6")).Should(Equal(3))
+                })
+                It("should return an error if no user is present with the given guid", func() {
+                        _, err := userStore.LoadUserIdByGuid("367aee50-2fb4-012c-4444-001517734d92")
+                        Expect(err).To(HaveOccurred())
+                })
+        })
+})
+
+```
+]
+---
+name: ginkgo
+.left-column[
+## Fn testing with Mountebank
+### - What is it?
+]
+.right-column[
+Enables the creation of 'test doubles'
+
+Test Double == A fake version of a remote dependency (e.g. another service you depend upon)
+
+.imposter-img.center[![Center-aligned image](images/mountebank.gif)]
+
+Your service will run against a set of imposters mocking a
+predefined set of behaviors
+
+Test against
+- slow responses
+- different failure scenarios (timeouts, 500s, ...)
+- invalid responses
+- Dynamically generated behaviour (in Js)
+]
+---
+name: ginkgo
+.left-column[
+## Fn testing with Mountebank
+### - What is it?
+### - Define an Imposter
+]
+.right-column[
+Initial Imposter in 'proxyOnce' mode
+
+```json
+"stubs": [
+  {
+    "responses": [
+      {
+        "proxy": {
+          "to": "http://origin-server.com",
+          "mode": "proxyOnce",
+          "predicateGenerators": [
+            {
+              "matches": {
+                "method": true,
+                "path": true,
+                "query": true
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]
+```
+
+Run the first time and record the interaction
+]
+---
+name: ginkgo
+.left-column[
+## Fn testing with Mountebank
+### - What is it?
+### - Define an Imposter
+]
+.right-column[
+Imposter with recorded interaction
+
+```json
+"stubs": [
+  {
+    "predicates": [{
+      "deepEquals': {
+        "method": "GET",
+        "path": "/test",
+        "query": { "q": "mountebank" }
+      }
+    }],
+    "responses": [
+      { "is": ...saved response }
+    ]
+  }
+  {
+    "responses": [
+      {
+        "proxy": {
+          "to": "http://origin-server.com",
+          "mode": "proxyOnce",
+          "predicateGenerators": [
+            {
+              "matches": {
+                "method": true,
+                "path": true,
+                "query": true
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]
+```
+
+Extract the Imposter configuration and use it in your fn tests
+
 ]
 ---
 template: inverse
@@ -345,7 +629,14 @@ Go will bake a ready to run executable for the target platform
 ```go
 go install github.com/gilt/svc-shipping-address
 ```
+
+Statically linked
+
+Just copy over the binary  and run
+- Only if same architecture
+
 ]
+
 ---
 name: deploy
 .center[![Center-aligned image](images/gopher+docker+ecs.png)]
@@ -355,7 +646,7 @@ name: deploy
 ### - Docker image
 ]
 .right-column[
-- Build the executable *inside* the official Docker Go image
+Build the executable *inside* the official Docker Go image
 
 ```go
 FROM golang
@@ -366,7 +657,7 @@ ADD ./config /go/config
 RUN go install github.com/gilt/svc-shipping-address
 ```
 
-- Publish your port
+Publish your port
 
 ```go
 ENTRYPOINT ./bin/svc-shipping-address
@@ -383,7 +674,7 @@ name: deploy
 ### - Push to Amazon
 ]
 .right-column[
-- Tag & push to ECR
+Tag & push to ECR
 ```go
 docker tag svc-shipping-address:$(PREVIOUS_HASH) 905260852223.dkr.ecr.us-east-1.amazonaws.com/svc-shipping-address:$(PREVIOUS_HASH)
 docker push 905260852223.dkr.ecr.us-east-1.amazonaws.com/svc-shipping-address:$(PREVIOUS_HASH)
@@ -397,13 +688,13 @@ name: deploy
 ### - Deploy to ECS
 ]
 .right-column[
-- There is a bit of setup up front to build an ECS cluster
+There is a bit of setup up front to build an ECS cluster
 
-- Your Go service will be an ECS task
+Your Go service will be an ECS task
 
-- Configure an ECS service that uses your task
+Configure an ECS service that uses your task
 
-- Run the ECS service!
+Run the ECS service!
 ]
 ---
 name: ecs-service
@@ -475,11 +766,11 @@ name: ecs-service
 ### - Live
 ]
 .right-column[
-- Running Service
+Running Service
 
 .center[![Center-aligned image](images/ecs-service2.png)]
 
-- Tasks
+Tasks
 
 .center[![Center-aligned image](images/ecs-service.png)]
 
@@ -493,7 +784,7 @@ name: monitoring
 ### - Monitoring
 ]
 .right-column[
-- NewRelic is fully supported
+NewRelic is fully supported
 
 .center[![Center-aligned image](images/new-relic.png)]
 ]
@@ -506,9 +797,84 @@ name: monitoring
 ### - Monitoring
 ]
 .right-column[
-- NewRelic is fully supported
+NewRelic is fully supported
 
 .center[![Center-aligned image](images/new-relic-go-runtime.png )]
+]
+---
+name: monitoring
+.left-column[
+## Running in ECS
+### - Service configuration
+### - Live
+### - Monitoring
+### - Distributed tracing
+]
+.right-column[
+Making sense of what is going on
+
+Exponentially hard in a microservices environment
+
+NewRelic does not help that much
+
+Other solutions
+- Zipkin (Twitter)
+- Dapper (Google)
+
+Support for propagating a ```Context``` across API boundaries
+- Baked in the ```context``` package
+- Generate a ```Context```
+- Accept, decorate and pass on an incoming ```Context```
+- Collect all this ```Context```(s) and extract a picture of your system
+
+Examples
+- [Phosphor](https://phosphor.io/)
+- [Hailo Trace](https://sudo.hailoapp.com/services/2015/03/09/journey-into-a-microservice-world-part-3/)
+]
+---
+template: inverse
+## Cool stuff
+---
+name: cool-stuff
+.left-column[
+## Cool stuff
+### - Revel
+]
+.right-column[
+.big-img.center[![Center-aligned image](images/revel.png)]
+]
+---
+name: cool-stuff
+.left-column[
+## Cool stuff
+### - Revel
+### - Gorm
+]
+.right-column[
+.big-img.center[![Center-aligned image](images/gorm.png)]
+]
+---
+name: cool-stuff
+.left-column[
+## Cool stuff
+### - Revel
+### - Gorm
+### - CockroachDB
+]
+.right-column[
+.big-img.center[![Center-aligned image](images/cockroachdb.png)]
+]
+---
+name: cool-stuff
+.left-column[
+## Cool stuff
+### - Revel
+### - Gorm
+### - CockroachDB
+### - Consul
+]
+.right-column[
+.big-img.center[![Center-aligned image](images/consul.png)]
 ]
 ---
 template: inverse
